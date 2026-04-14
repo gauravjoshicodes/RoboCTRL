@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Robot Motion Control — Tesla-Style Dashboard</title>
+    <meta name="description" content="Industry-level robot motion control simulator with Tesla-style dashboard, real physics, and telemetry.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=4">
+</head>
+<body>
+<div id="app">
+    <!-- ═══ LEFT TELEMETRY PANEL ═══ -->
+    <aside class="panel panel-left" id="panelLeft">
+        <!-- System Status -->
+        <div class="tele-section">
+            <div class="tele-header"><span class="dot green"></span> SYSTEM STATUS</div>
+            <div class="status-grid">
+                <div class="status-item">
+                    <div class="status-icon">🚀</div>
+                    <div class="status-info">
+                        <span class="status-label">Speed</span>
+                        <span class="status-value" id="telSpeed">0 <small>cm/s</small></span>
+                    </div>
+                </div>
+                <div class="status-item">
+                    <div class="status-icon">🔋</div>
+                    <div class="status-info">
+                        <span class="status-label">Battery</span>
+                        <div class="bar-wrap"><div class="bar-fill battery-fill" id="batteryFill"></div></div>
+                        <span class="status-value sm" id="telBattery">100%</span>
+                    </div>
+                </div>
+                <div class="status-item">
+                    <div class="status-icon">🌡</div>
+                    <div class="status-info">
+                        <span class="status-label">Motor Temp</span>
+                        <div class="bar-wrap"><div class="bar-fill temp-fill" id="tempFill"></div></div>
+                        <span class="status-value sm" id="telTemp">32°C</span>
+                    </div>
+                </div>
+                <div class="status-item">
+                    <div class="status-icon">⚡</div>
+                    <div class="status-info">
+                        <span class="status-label">Power Draw</span>
+                        <span class="status-value" id="telPower">0.0 <small>W</small></span>
+                    </div>
+                </div>
+                <div class="status-item">
+                    <div class="status-icon">📡</div>
+                    <div class="status-info">
+                        <span class="status-label">Sensors</span>
+                        <span class="status-value green-text" id="telSensor">ACTIVE</span>
+                    </div>
+                </div>
+                <div class="status-item">
+                    <div class="status-icon">❤️</div>
+                    <div class="status-info">
+                        <span class="status-label">Health</span>
+                        <div class="bar-wrap"><div class="bar-fill health-fill" id="healthFill"></div></div>
+                        <span class="status-value sm" id="telHealth">100%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Motor Pin Status -->
+        <div class="tele-section">
+            <div class="tele-header"><span class="dot cyan"></span> MOTOR LOGIC (L298N)</div>
+            <div class="motor-grid">
+                <div class="motor-card" id="mCardL">
+                    <div class="mc-title">LEFT <span>Motor A</span></div>
+                    <div class="pin-row"><span>IN1 (Pin 8)</span><span class="pv" id="pIN1">LOW</span></div>
+                    <div class="pin-row"><span>IN2 (Pin 9)</span><span class="pv" id="pIN2">LOW</span></div>
+                    <div class="pin-row"><span>ENA (Pin 5)</span><span class="pv pwm" id="pENA">0</span></div>
+                    <div class="mc-dir" id="mDirL">STOP</div>
+                </div>
+                <div class="motor-card" id="mCardR">
+                    <div class="mc-title">RIGHT <span>Motor B</span></div>
+                    <div class="pin-row"><span>IN3 (Pin 10)</span><span class="pv" id="pIN3">LOW</span></div>
+                    <div class="pin-row"><span>IN4 (Pin 11)</span><span class="pv" id="pIN4">LOW</span></div>
+                    <div class="pin-row"><span>ENB (Pin 6)</span><span class="pv pwm" id="pENB">0</span></div>
+                    <div class="mc-dir" id="mDirR">STOP</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mode Toggle -->
+        <div class="tele-section">
+            <div class="tele-header"><span class="dot purple"></span> CONTROL MODE</div>
+            <div class="mode-toggle">
+                <button class="mode-btn active" id="modeManual">🎮 Manual</button>
+                <button class="mode-btn" id="modeAuto">🤖 Autonomous</button>
+            </div>
+            <div class="auto-status" id="autoStatus" style="display:none">
+                <span class="dot green blink"></span> Autonomous navigation active...
+            </div>
+        </div>
+    </aside>
+
+    <!-- ═══ CENTER: CANVAS ═══ -->
+    <main class="center">
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <div class="tb-left">
+                <h1 class="logo">ROBO<span>CTRL</span></h1>
+                <span class="logo-sub">Motion Control Dashboard v2.0</span>
+            </div>
+            <div class="tb-center">
+                <div class="main-status" id="mainStatus">
+                    <span class="dot green"></span>
+                    <span id="mainStatusText">IDLE</span>
+                </div>
+            </div>
+            <div class="tb-right">
+                <button class="tb-btn" id="btnNight" title="Night Mode">🌙</button>
+                <button class="tb-btn" id="btnRain" title="Rain">🌧️</button>
+                <button class="tb-btn" id="btnZoomIn" title="Zoom In">🔍+</button>
+                <button class="tb-btn" id="btnZoomOut" title="Zoom Out">🔍−</button>
+                <button class="tb-btn" id="btnReset" title="Reset">↺</button>
+            </div>
+        </div>
+
+        <!-- Canvas -->
+        <div class="canvas-area">
+            <canvas id="mainCanvas"></canvas>
+            <!-- Compass Overlay -->
+            <div class="compass" id="compass">
+                <div class="compass-ring">
+                    <span class="cn">N</span><span class="ce">E</span><span class="cs">S</span><span class="cw">W</span>
+                    <div class="compass-needle" id="compassNeedle"></div>
+                </div>
+                <div class="compass-deg" id="compassDeg">0°</div>
+            </div>
+            <!-- Minimap -->
+            <div class="minimap-box">
+                <canvas id="minimap" width="140" height="140"></canvas>
+                <span class="mm-label">MAP</span>
+            </div>
+            <!-- Canvas Footer -->
+            <div class="canvas-footer">
+                <span id="posDisplay">X: 0 &nbsp; Y: 0 &nbsp; θ: 0°</span>
+                <span class="fps-display" id="fpsDisplay">60 FPS</span>
+            </div>
+        </div>
+    </main>
+
+    <!-- ═══ RIGHT CONTROL PANEL ═══ -->
+    <aside class="panel panel-right" id="panelRight">
+        <!-- Direction Control -->
+        <div class="tele-section">
+            <div class="tele-header"><span class="dot cyan"></span> DIRECTION CONTROL</div>
+            <div class="ctrl-hint">Keyboard: W A S D / Arrows &nbsp;|&nbsp; Space = Brake</div>
+            <div class="dpad">
+                <button class="dp forward" id="bFwd">▲<span>FWD</span></button>
+                <button class="dp left" id="bLeft">◄<span>LEFT</span></button>
+                <button class="dp stop-btn" id="bStop">■<span>STOP</span></button>
+                <button class="dp right" id="bRight">►<span>RIGHT</span></button>
+                <button class="dp backward" id="bBwd">▼<span>BWD</span></button>
+            </div>
+        </div>
+
+        <!-- Speedometer -->
+        <div class="tele-section">
+            <div class="tele-header"><span class="dot green"></span> SPEEDOMETER</div>
+            <div class="speedo-box">
+                <canvas id="speedoCanvas" width="190" height="190"></canvas>
+                <div class="speedo-text">
+                    <div class="speedo-num" id="speedoNum">0</div>
+                    <div class="speedo-unit">CM/S</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PWM Speed -->
+        <div class="tele-section">
+            <div class="tele-header"><span class="dot amber"></span> PWM SPEED</div>
+            <div class="slider-wrap">
+                <input type="range" id="pwmSlider" min="0" max="255" value="180">
+                <div class="slider-info">PWM: <strong id="pwmVal">180</strong> / 255</div>
+            </div>
+        </div>
+
+        <!-- Truth Table -->
+        <div class="tele-section">
+            <div class="tele-header"><span class="dot purple"></span> DIRECTION TRUTH TABLE</div>
+            <table class="tt">
+                <thead><tr><th>Dir</th><th>IN1</th><th>IN2</th><th>IN3</th><th>IN4</th><th>L</th><th>R</th></tr></thead>
+                <tbody>
+                    <tr id="rFwd"><td>FWD</td><td>H</td><td>L</td><td>H</td><td>L</td><td>→</td><td>→</td></tr>
+                    <tr id="rBwd"><td>BWD</td><td>L</td><td>H</td><td>L</td><td>H</td><td>←</td><td>←</td></tr>
+                    <tr id="rLeft"><td>LEFT</td><td>L</td><td>H</td><td>H</td><td>L</td><td>←</td><td>→</td></tr>
+                    <tr id="rRight"><td>RIGHT</td><td>H</td><td>L</td><td>L</td><td>H</td><td>→</td><td>←</td></tr>
+                    <tr id="rStop"><td>STOP</td><td>L</td><td>L</td><td>L</td><td>L</td><td>—</td><td>—</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Serial Log -->
+        <div class="tele-section flex-grow">
+            <div class="tele-header"><span class="dot green"></span> SERIAL MONITOR <button class="clear-btn" id="clearLog">Clear</button></div>
+            <div class="serial" id="serial">
+                <div class="sline info">[SYS] Dashboard initialized. Ready.</div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ═══ MOBILE JOYSTICK ═══ -->
+    <div class="joy-overlay" id="joyOverlay">
+        <div class="joy-base" id="joyBase">
+            <div class="joy-knob" id="joyKnob"></div>
+        </div>
+        <button class="mob-brake" id="mobBrake">BRAKE</button>
+    </div>
+
+    <!-- Warning Toast -->
+    <div class="toast" id="toast"></div>
+</div>
+<script src="simulator.js?v=4"></script>
+</body>
+</html>
